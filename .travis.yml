@@ -1,0 +1,23 @@
+dist: trusty
+
+group: edge
+
+language: java
+
+sudo: required
+
+jdk: openjdk8
+
+install:
+   - export MAVEN_HOME=`mvn --version | grep 'Maven home' | sed -e 's/Maven h.* //'`
+
+script:
+  - ./.travis/build.sh
+
+#TODO
+#after_success:
+#  - cd .. && ./.ci/travis-deploy.sh
+
+branch:
+  only:
+    - master

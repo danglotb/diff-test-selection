@@ -4,6 +4,7 @@ import com.atlassian.clover.reporters.html.HtmlReporter;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +21,7 @@ public class CloverReader {
 
     private static final String REPORT_DIRECTORY = "/report/";
 
-    public volatile static Map<String, Map<String, Map<String, List<Integer>>>> coveragePerTestMethods = new HashMap<>();
+    public volatile static Map<String, Map<String, Map<String, List<Integer>>>> coveragePerTestMethods = new LinkedHashMap<>();
 
     /**
      * read the database initialize by {@link CloverExecutor}.
