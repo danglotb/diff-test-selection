@@ -55,6 +55,7 @@ public class CloverExecutor {
         properties.setProperty("license.skip", "true");
         properties.setProperty("findbugs.skip", "true");
         properties.setProperty("gpg.skip", "true");
+        properties.setProperty("jacoco.skip", "true");
         request.setProperties(properties);
 
         Invoker invoker = new DefaultInvoker();
