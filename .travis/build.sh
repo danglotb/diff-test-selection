@@ -10,4 +10,4 @@ mvn install
 ./src/main/bash/setup-commons-math.sh
 
 # execute the plugin
-cd commons-math && mvn clean eu.stamp-project:diff-test-selection:0.1-SNAPSHOT:list -DpathToDiff=".bugs-dot-jar/developer-patch.diff" -DpathToOtherVersion="../commons-math_fixed"
+cd commons-math && mvn clean eu.stamp-project:diff-test-selection:list -DpathToDiff=".bugs-dot-jar/developer-patch.diff" -DpathToOtherVersion="../commons-math_fixed"
