@@ -23,7 +23,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,9 +46,13 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     @Parameter(property = "report", defaultValue = "CSV")
     private String report;
 
+    public DiffTestSelectionMojo() {
+    }
+
     private enum ReportEnum {
         CSV(new CSVReport());
         public final Report instance;
+
         ReportEnum(Report instance) {
             this.instance = instance;
         }
@@ -64,10 +67,9 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         final File file = new File(pathFileToCheck);
         if (!file.exists()) {
             getLog().error(pathFileToCheck + " does not exist, please check it out!", new IllegalArgumentException(pathFileToCheck));
-            return ""; // make javac happy
-        } else {
-            return file.getAbsolutePath();
+            System.exit(1);
         }
+        return file.getAbsolutePath();
     }
 
     public void execute() throws MojoExecutionException {
@@ -77,10 +79,10 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         final Map<String, Map<String, Map<String, List<Integer>>>> coverage = getCoverage(baseDir);
         final Map<String, List<String>> testThatExecuteChanges = this.getTestThatExecuteChanges(coverage);
         ReportEnum.valueOf(this.report).instance.report(
-                        getLog(),
-                        baseDir.getAbsolutePath() + "/" + this.outputPath,
-                        testThatExecuteChanges
-                );
+                getLog(),
+                baseDir.getAbsolutePath() + "/" + this.outputPath,
+                testThatExecuteChanges
+        );
     }
 
     private Map<String, Map<String, Map<String, List<Integer>>>> getCoverage(File basedir) {
@@ -99,7 +101,14 @@ public class DiffTestSelectionMojo extends AbstractMojo {
                     if (modifiedLinesPerQualifiedName == null) {
                         continue;
                     }
-                    testMethodPerTestClasses.putAll(matchChangedWithCoverage(coverage, modifiedLinesPerQualifiedName));
+                    Map<String, List<String>> matchedChangedWithCoverage = matchChangedWithCoverage(coverage, modifiedLinesPerQualifiedName);
+                    matchedChangedWithCoverage.keySet().forEach(key -> {
+                        if (!testMethodPerTestClasses.containsKey(key)) {
+                            testMethodPerTestClasses.put(key, matchedChangedWithCoverage.get(key));
+                        } else {
+                            testMethodPerTestClasses.get(key).addAll(matchedChangedWithCoverage.get(key));
+                        }
+                    });
                 }
             }
         } catch (Exception e) {
@@ -113,18 +122,25 @@ public class DiffTestSelectionMojo extends AbstractMojo {
                                                                         String currentLine,
                                                                         String secondLine) throws Exception {
         final File baseDir = project.getBasedir();
-        String file1 = getCorrectPathFile(currentLine);
-        String file2 = getCorrectPathFile(secondLine);
+        final String file1 = getCorrectPathFile(currentLine);
+        final String file2 = getCorrectPathFile(secondLine);
         if (!file1.equals(file2)) {
-            System.out.println("Could not match " + file1 + " and " + file2);
+            getLog().warn("Could not match " + file1 + " and " + file2);
             return null;
         }
-        final Diff compare = new AstComparator()
-                .compare(
-                        new File(baseDir + file1),
-                        new File(pathToOtherVersion + file2)
-                );
-        return buildMap(compare);
+        try {
+            final File f1 = getCorrectFile(baseDir.getAbsolutePath(), file1);
+            final File f2 = getCorrectFile(pathToOtherVersion, file2);
+            return buildMap(new AstComparator().compare(f1, f2));
+        } catch (Exception e) {
+            getLog().error("Error when trying to compare " + file1 + " and " + file2);
+            return null;
+        }
+    }
+
+    private File getCorrectFile(String baseDir, String fileName){
+        final File file = new File(baseDir + "/" + fileName);
+        return file.exists() ? file : new File(baseDir + "/../" + fileName);
     }
 
     @NotNull
