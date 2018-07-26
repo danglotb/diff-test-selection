@@ -4,14 +4,21 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
+
     <groupId>eu.stamp-project</groupId>
     <artifactId>diff-test-selection</artifactId>
     <version>0.1-SNAPSHOT</version>
     <packaging>maven-plugin</packaging>
 
-    <name>Diff Test Selection</name>
 
+    <name>Diff Test Selection</name>
     <description>This maven plugin provides a list of test classes and their test methods that executes a given changes (based on a diff).</description>
+    <url>http://github.com/STAMP-project/diff-test-selection.git</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,6 +26,45 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License v3.0</name>
+            <url>https://www.gnu.org/licenses/gpl.txt</url>
+        </license>
+    </licenses>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/STAMP-project/diff-test-selection/issues</url>
+    </issueManagement>
+
+    <developers>
+        <developer>
+            <name>Benjamin Danglot</name>
+            <email>benjamin.danglot@inria.fr</email>
+            <organization>STAMP-project</organization>
+            <organizationUrl>https://www.stamp-project.eu/view/main/</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/STAMP-project/diff-test-selection/</url>
+        <connection>scm:git:git://github.com:STAMP-project/diff-test-selection.git</connection>
+        <developerConnection>scm:git:git@github.com:STAMP-project/diff-test-selection.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh-diff-test-selection-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 
     <dependencies>
 

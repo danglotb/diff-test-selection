@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -88,7 +89,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     }
 
     private Map<String, List<String>> getTestThatExecuteChanges(Map<String, Map<String, Map<String, List<Integer>>>> coverage) {
-        final Map<String, List<String>> testMethodPerTestClasses = new HashMap<>();
+        final Map<String, List<String>> testMethodPerTestClasses = new LinkedHashMap<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(new File(pathToDiff)))) {
             String currentLine = null;
             while ((currentLine = reader.readLine()) != null) {
@@ -128,7 +129,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
 
     @NotNull
     private Map<String, List<Integer>> buildMap(Diff compare) {
-        Map<String, List<Integer>> modifiedLinesPerQualifiedName = new HashMap<>();
+        Map<String, List<Integer>> modifiedLinesPerQualifiedName = new LinkedHashMap<>();// keeps the order
         for (Operation operation : compare.getAllOperations()) {
             final CtElement srcNode = operation.getSrcNode();
             if (srcNode == null) {
