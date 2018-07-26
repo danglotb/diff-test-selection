@@ -37,6 +37,7 @@ public class CSVReport implements Report {
         try {
             FileWriter writer = new FileWriter(file);
             writer.write(report);
+            writer.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
