@@ -1,0 +1,20 @@
+dist: trusty
+
+group: edge
+
+language: java
+
+sudo: required
+
+jdk: openjdk8
+
+script:
+  - ./.travis/build.sh
+
+#TODO
+#after_success:
+#  - cd .. && ./.ci/travis-deploy.sh
+
+branch:
+  only:
+    - master
