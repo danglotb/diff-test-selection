@@ -83,7 +83,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     }
 
     private Map<String, Map<String, Map<String, List<Integer>>>> getCoverage(File basedir) {
-//        new CloverExecutor().instrumentAndRunTest(basedir.getAbsolutePath());
+        new CloverExecutor().instrumentAndRunTest(basedir.getAbsolutePath());
         return new CloverReader().read(basedir.getAbsolutePath());
     }
 
