@@ -58,6 +58,27 @@ org.apache.commons.math.optimization.linear.SimplexTableauTest;testInitializatio
 
 which is the list of full qualified test classes (1rst column), and their test method names that execute the provided diff.
 
+## Support on diff
+
+On Linux, you can obtain a diff easily with:
+```shell
+diff -ru folder1 folder2 > patch.diff
+```
+`r` option to be run recursively
+`u` option to unified the diff
+
+You can get the `.diff` file from git by redirect the `stdout` of the `git diff` command
+```shell
+git diff > patch.diff
+```
+
+To apply the `.diff` file run:
+```shell
+patch -p1 <patch.diff
+```
+at the root of the diff (make sure by checking the path in the diff).
+
+
 Please, open an issue if you have any question / suggestion. Pull request are welcome! 😃
 
 ### Licence
