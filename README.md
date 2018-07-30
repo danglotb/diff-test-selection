@@ -63,8 +63,10 @@ which is the list of full qualified test classes (1rst column), and their test m
 If the plugin takes to much time, it is because it calls a new maven execution inside. To speed up the process you can use:
 
 ```shell
-mvn clean clean org.openclover:clover-maven-plugin:4.2.0:setup test eu.stamp-project:diff-test-selection:list -DpathToDiff="<pathToDiff>" -DpathToOtherVersion="<pathToSecondVersion>"
+mvn clean -Djacoco.skip=true org.openclover:clover-maven-plugin:4.2.0:setup test eu.stamp-project:diff-test-selection:list -DpathToDiff="<pathToDiff>" -DpathToOtherVersion="<pathToSecondVersion>"
 ```
+
+`-Djacoco.skip=true` allows to skip any configuration of jacoco, which seems to have some conflict with `OpenClover`.
 
 ## Support on diff
 

@@ -14,6 +14,6 @@ cd commons-math && mvn clean eu.stamp-project:diff-test-selection:instrumentAndL
 
 # TODO add an oracle
 
-mvn clean org.openclover:clover-maven-plugin:4.2.0:setup test eu.stamp-project:diff-test-selection:list -DpathToDiff=".bugs-dot-jar/developer-patch.diff" -DpathToOtherVersion="../commons-math_fixed"
+mvn clean -Djacoco.skip=true org.openclover:clover-maven-plugin:4.2.0:setup test eu.stamp-project:diff-test-selection:list -DpathToDiff=".bugs-dot-jar/developer-patch.diff" -DpathToOtherVersion="../commons-math_fixed"
 
 # TODO add an oracle
