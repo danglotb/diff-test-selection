@@ -1,5 +1,8 @@
 package eu.stamp_project.diff_test_selection;
 
+import eu.stamp_project.diff_test_selection.clover.CloverExecutor;
+import eu.stamp_project.diff_test_selection.clover.CloverReader;
+import eu.stamp_project.diff_test_selection.list.ListBuilder;
 import eu.stamp_project.diff_test_selection.report.CSVReport;
 import eu.stamp_project.diff_test_selection.report.Report;
 import gumtree.spoon.AstComparator;
@@ -28,11 +31,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * This mojo will build from the clover result, the list of test classes and test methods that execute the given changes.
+ * Before running this plugins, you should the instrumentation by clover then the test, <i>i.e.</i>
+ * mvn clean clean org.openclover:clover-maven-plugin:4.2.0:setup test eu.stamp-project:diff-test-selection:list
+ */
 @Mojo(name = "list")
 public class DiffTestSelectionMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project}", required = true)
-    private MavenProject project;
+    protected MavenProject project;
 
     @Parameter(property = "pathToDiff", required = true)
     private String pathToDiff;
@@ -45,9 +53,6 @@ public class DiffTestSelectionMojo extends AbstractMojo {
 
     @Parameter(property = "report", defaultValue = "CSV")
     private String report;
-
-    public DiffTestSelectionMojo() {
-    }
 
     private enum ReportEnum {
         CSV(new CSVReport());
@@ -77,7 +82,8 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         final File baseDir = project.getBasedir();
         getLog().info(baseDir.getAbsolutePath());
         final Map<String, Map<String, Map<String, List<Integer>>>> coverage = getCoverage(baseDir);
-        final Map<String, List<String>> testThatExecuteChanges = this.getTestThatExecuteChanges(coverage);
+        final ListBuilder listBuilder = new ListBuilder(this.pathToDiff, this.pathToOtherVersion, baseDir, getLog());
+        final Map<String, List<String>> testThatExecuteChanges = listBuilder.getTestThatExecuteChanges(coverage);
         ReportEnum.valueOf(this.report).instance.report(
                 getLog(),
                 baseDir.getAbsolutePath() + "/" + this.outputPath,
@@ -88,133 +94,6 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     private Map<String, Map<String, Map<String, List<Integer>>>> getCoverage(File basedir) {
         new CloverExecutor().instrumentAndRunTest(basedir.getAbsolutePath());
         return new CloverReader().read(basedir.getAbsolutePath());
-    }
-
-    private Map<String, List<String>> getTestThatExecuteChanges(Map<String, Map<String, Map<String, List<Integer>>>> coverage) {
-        final Map<String, List<String>> testMethodPerTestClasses = new LinkedHashMap<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(new File(pathToDiff)))) {
-            String currentLine = null;
-            while ((currentLine = reader.readLine()) != null) {
-                if (currentLine.startsWith("+++") || currentLine.startsWith("---")) {
-                    Map<String, List<Integer>> modifiedLinesPerQualifiedName =
-                            getModifiedLinesPerQualifiedName(pathToOtherVersion, currentLine, reader.readLine());
-                    if (modifiedLinesPerQualifiedName == null) {
-                        continue;
-                    }
-                    Map<String, List<String>> matchedChangedWithCoverage = matchChangedWithCoverage(coverage, modifiedLinesPerQualifiedName);
-                    matchedChangedWithCoverage.keySet().forEach(key -> {
-                        if (!testMethodPerTestClasses.containsKey(key)) {
-                            testMethodPerTestClasses.put(key, matchedChangedWithCoverage.get(key));
-                        } else {
-                            testMethodPerTestClasses.get(key).addAll(matchedChangedWithCoverage.get(key));
-                        }
-                    });
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return testMethodPerTestClasses;
-    }
-
-    @Nullable
-    private Map<String, List<Integer>> getModifiedLinesPerQualifiedName(String pathToOtherVersion,
-                                                                        String currentLine,
-                                                                        String secondLine) throws Exception {
-        final File baseDir = project.getBasedir();
-        final String file1 = getCorrectPathFile(currentLine);
-        final String file2 = getCorrectPathFile(secondLine);
-        if (!file1.equals(file2)) {
-            getLog().warn("Could not match " + file1 + " and " + file2);
-            return null;
-        }
-        try {
-            final File f1 = getCorrectFile(baseDir.getAbsolutePath(), file1);
-            final File f2 = getCorrectFile(pathToOtherVersion, file2);
-            return buildMap(new AstComparator().compare(f1, f2));
-        } catch (Exception e) {
-            getLog().error("Error when trying to compare " + file1 + " and " + file2);
-            return null;
-        }
-    }
-
-    private File getCorrectFile(String baseDir, String fileName){
-        final File file = new File(baseDir + "/" + fileName);
-        return file.exists() ? file : new File(baseDir + "/../" + fileName);
-    }
-
-    @NotNull
-    private Map<String, List<Integer>> buildMap(Diff compare) {
-        Map<String, List<Integer>> modifiedLinesPerQualifiedName = new LinkedHashMap<>();// keeps the order
-        for (Operation operation : compare.getAllOperations()) {
-            final CtElement srcNode = operation.getSrcNode();
-            if (srcNode == null) {
-                continue;
-            }
-            final SourcePosition position = srcNode.getPosition();
-            if (position == null) {
-                continue;
-            }
-            final CompilationUnit compilationUnit = position.getCompilationUnit();
-            if (compilationUnit == null) {
-                continue;
-            }
-            final CtType<?> mainType = compilationUnit.getMainType();
-            if (mainType == null) {
-                continue;
-            }
-            final String qualifiedName = mainType.getQualifiedName();
-            if (!modifiedLinesPerQualifiedName.containsKey(qualifiedName)) {
-                modifiedLinesPerQualifiedName.put(qualifiedName, new ArrayList<>());
-            }
-            modifiedLinesPerQualifiedName.get(qualifiedName).add(position.getLine());
-        }
-        return modifiedLinesPerQualifiedName;
-    }
-
-    private Map<String, List<String>> matchChangedWithCoverage(Map<String, Map<String, Map<String, List<Integer>>>> coverage,
-                                                               Map<String, List<Integer>> modifiedLinesPerQualifiedName) {
-        Map<String, List<String>> collect = coverage
-                .keySet()
-                .stream()
-                .collect(Collectors.toMap(
-                        testClassKey -> testClassKey,
-                        testClassKey ->
-                                coverage.get(testClassKey)
-                                        .keySet()
-                                        .stream()
-                                        .filter(testMethodKey ->
-                                                coverage.get(testClassKey)
-                                                        .get(testMethodKey)
-                                                        .keySet()
-                                                        .stream()
-                                                        .filter(modifiedLinesPerQualifiedName::containsKey)
-                                                        .anyMatch(targetClassName ->
-                                                                modifiedLinesPerQualifiedName.get(targetClassName)
-                                                                        .stream()
-                                                                        .anyMatch(line ->
-                                                                                coverage.get(testClassKey)
-                                                                                        .get(testMethodKey)
-                                                                                        .get(targetClassName).contains(line)
-                                                                        )
-                                                        )
-                                        ).collect(Collectors.toList())
-                        )
-                );
-        for (String key : new ArrayList<>(collect.keySet())) {
-            if (collect.get(key).isEmpty()) {
-                collect.remove(key);
-            }
-        }
-        return collect;
-    }
-
-    private String getCorrectPathFile(String path) {
-        final String s = path.split(" ")[1];
-        if (s.contains("\t")) {
-            return s.split("\t")[0].substring(1);
-        }
-        return s.substring(1); // removing the first letter, i.e. a and b
     }
 
     /*
