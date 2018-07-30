@@ -8,7 +8,7 @@ This plugin is meant to be run without modifying your `pom.xml`.
 You can run it with:
 
 ```shell
-mvn clean eu.stamp-project:diff-test-selection:list -DpathToDiff="<pathToDiff>" -DpathToOtherVersion="<pathToSecondVersion>"
+mvn clean eu.stamp-project:diff-test-selection:instrumentAndList -DpathToDiff="<pathToDiff>" -DpathToOtherVersion="<pathToSecondVersion>"
 ```
 
 at the root (where your `pom.xml` is) of your project.
@@ -46,7 +46,7 @@ this script makes a copy of commons-math and apply the provided diff.
 4. launch the plugin:
 ```shell
 cd commons-math
-mvn clean eu.stamp-project:diff-test-selection:list -DpathToDiff=".bugs-dot-jar/developer-patch.diff" -DpathToOtherVersion="../commons-math_fixed" -Dreport=CSV -DoutputPath="testsThatExecuteTheChange.csv"
+mvn clean eu.stamp-project:diff-test-selection:instrumentAndList -DpathToDiff=".bugs-dot-jar/developer-patch.diff" -DpathToOtherVersion="../commons-math_fixed" -Dreport=CSV -DoutputPath="testsThatExecuteTheChange.csv"
 ```
 You will see a build failure, which is normal and not important (this version of `commons-math` has a bug)
 
@@ -57,6 +57,14 @@ org.apache.commons.math.optimization.linear.SimplexTableauTest;testInitializatio
 ```
 
 which is the list of full qualified test classes (1rst column), and their test method names that execute the provided diff.
+
+### About performance
+
+If the plugin takes to much time, it is because it calls a new maven execution inside. To speed up the process you can use:
+
+```shell
+mvn clean clean org.openclover:clover-maven-plugin:4.2.0:setup test eu.stamp-project:diff-test-selection:list -DpathToDiff="<pathToDiff>" -DpathToOtherVersion="<pathToSecondVersion>"
+```
 
 ## Support on diff
 
