@@ -174,39 +174,24 @@ public class DiffTestSelectionMojo extends AbstractMojo {
 
     private Map<String, List<String>> matchChangedWithCoverage(Map<String, Map<String, Map<String, List<Integer>>>> coverage,
                                                                Map<String, List<Integer>> modifiedLinesPerQualifiedName) {
-        Map<String, List<String>> collect = coverage
-                .keySet()
-                .stream()
-                .collect(Collectors.toMap(
-                        testClassKey -> testClassKey,
-                        testClassKey ->
-                                coverage.get(testClassKey)
-                                        .keySet()
-                                        .stream()
-                                        .filter(testMethodKey ->
-                                                coverage.get(testClassKey)
-                                                        .get(testMethodKey)
-                                                        .keySet()
-                                                        .stream()
-                                                        .filter(modifiedLinesPerQualifiedName::containsKey)
-                                                        .anyMatch(targetClassName ->
-                                                                modifiedLinesPerQualifiedName.get(targetClassName)
-                                                                        .stream()
-                                                                        .anyMatch(line ->
-                                                                                coverage.get(testClassKey)
-                                                                                        .get(testMethodKey)
-                                                                                        .get(targetClassName).contains(line)
-                                                                        )
-                                                        )
-                                        ).collect(Collectors.toList())
-                        )
-                );
-        for (String key : new ArrayList<>(collect.keySet())) {
-            if (collect.get(key).isEmpty()) {
-                collect.remove(key);
+        Map<String, List<String>> testClassNamePerTestMethodNamesThatCoverChanges = new LinkedHashMap<>();
+        for (String testClassKey : coverage.keySet()) {
+            for (String testMethodKey : coverage.get(testClassKey).keySet()) {
+                for (String targetClassName : coverage.get(testClassKey).get(testMethodKey).keySet()) {
+                    if (modifiedLinesPerQualifiedName.containsKey(targetClassName)) {
+                        for (Integer line : modifiedLinesPerQualifiedName.get(targetClassName)) {
+                            if (coverage.get(testClassKey).get(testMethodKey).get(targetClassName).contains(line)) {
+                                if (!testClassNamePerTestMethodNamesThatCoverChanges.containsKey(testClassKey)) {
+                                    testClassNamePerTestMethodNamesThatCoverChanges.put(testClassKey, new ArrayList<>());
+                                }
+                                testClassNamePerTestMethodNamesThatCoverChanges.get(testClassKey).add(testMethodKey);
+                            }
+                        }
+                    }
+                }
             }
         }
-        return collect;
+        return testClassNamePerTestMethodNamesThatCoverChanges;
     }
 
     private String getCorrectPathFile(String path) {
