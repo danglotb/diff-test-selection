@@ -5,6 +5,7 @@ import org.apache.maven.plugin.logging.Log;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by Benjamin DANGLOT
@@ -22,7 +23,7 @@ public interface Report {
     void report(
             final Log logger,
             final String outputPath,
-            final Map<String, List<String>> testThatExecuteChanges
+            final Map<String, Set<String>> testThatExecuteChanges
     );
 
 }
