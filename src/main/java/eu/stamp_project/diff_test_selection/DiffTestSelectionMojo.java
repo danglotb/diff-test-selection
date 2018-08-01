@@ -23,9 +23,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Mojo(name = "list")
@@ -77,7 +79,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         final File baseDir = project.getBasedir();
         getLog().info(baseDir.getAbsolutePath());
         final Map<String, Map<String, Map<String, List<Integer>>>> coverage = getCoverage(baseDir);
-        final Map<String, List<String>> testThatExecuteChanges = this.getTestThatExecuteChanges(coverage);
+        final Map<String, Set<String>> testThatExecuteChanges = this.getTestThatExecuteChanges(coverage);
         ReportEnum.valueOf(this.report).instance.report(
                 getLog(),
                 baseDir.getAbsolutePath() + "/" + this.outputPath,
@@ -90,8 +92,8 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         return new CloverReader().read(basedir.getAbsolutePath());
     }
 
-    private Map<String, List<String>> getTestThatExecuteChanges(Map<String, Map<String, Map<String, List<Integer>>>> coverage) {
-        final Map<String, List<String>> testMethodPerTestClasses = new LinkedHashMap<>();
+    private Map<String, Set<String>> getTestThatExecuteChanges(Map<String, Map<String, Map<String, List<Integer>>>> coverage) {
+        final Map<String, Set<String>> testMethodPerTestClasses = new LinkedHashMap<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(new File(pathToDiff)))) {
             String currentLine = null;
             while ((currentLine = reader.readLine()) != null) {
@@ -101,7 +103,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
                     if (modifiedLinesPerQualifiedName == null) {
                         continue;
                     }
-                    Map<String, List<String>> matchedChangedWithCoverage = matchChangedWithCoverage(coverage, modifiedLinesPerQualifiedName);
+                    Map<String, Set<String>> matchedChangedWithCoverage = matchChangedWithCoverage(coverage, modifiedLinesPerQualifiedName);
                     matchedChangedWithCoverage.keySet().forEach(key -> {
                         if (!testMethodPerTestClasses.containsKey(key)) {
                             testMethodPerTestClasses.put(key, matchedChangedWithCoverage.get(key));
@@ -172,9 +174,9 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         return modifiedLinesPerQualifiedName;
     }
 
-    private Map<String, List<String>> matchChangedWithCoverage(Map<String, Map<String, Map<String, List<Integer>>>> coverage,
+    private Map<String, Set<String>> matchChangedWithCoverage(Map<String, Map<String, Map<String, List<Integer>>>> coverage,
                                                                Map<String, List<Integer>> modifiedLinesPerQualifiedName) {
-        Map<String, List<String>> testClassNamePerTestMethodNamesThatCoverChanges = new LinkedHashMap<>();
+        Map<String, Set<String>> testClassNamePerTestMethodNamesThatCoverChanges = new LinkedHashMap<>();
         for (String testClassKey : coverage.keySet()) {
             for (String testMethodKey : coverage.get(testClassKey).keySet()) {
                 for (String targetClassName : coverage.get(testClassKey).get(testMethodKey).keySet()) {
@@ -182,7 +184,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
                         for (Integer line : modifiedLinesPerQualifiedName.get(targetClassName)) {
                             if (coverage.get(testClassKey).get(testMethodKey).get(targetClassName).contains(line)) {
                                 if (!testClassNamePerTestMethodNamesThatCoverChanges.containsKey(testClassKey)) {
-                                    testClassNamePerTestMethodNamesThatCoverChanges.put(testClassKey, new ArrayList<>());
+                                    testClassNamePerTestMethodNamesThatCoverChanges.put(testClassKey, new HashSet<>());
                                 }
                                 testClassNamePerTestMethodNamesThatCoverChanges.get(testClassKey).add(testMethodKey);
                             }

@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -21,7 +22,7 @@ public class CSVReport implements Report {
     private static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
     @Override
-    public void report(final Log log, final String outputPath, final Map<String, List<String>> testThatExecuteChanges) {
+    public void report(final Log log, final String outputPath, final Map<String, Set<String>> testThatExecuteChanges) {
         final File file = new File(outputPath);
         StringBuilder builder = new StringBuilder();
         String report = testThatExecuteChanges.keySet()
