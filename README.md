@@ -1,4 +1,5 @@
-# diff-test-selection[![Build Status](https://travis-ci.org/STAMP-project/diff-test-selection.svg?branch=master)](https://travis-ci.org/STAMP-project/diff-test-selection)
+# diff-test-selection[![Build Status](https://travis-ci.org/STAMP-project/diff-test-selection.svg?branch=master)](https://travis-ci.org/STAMP-project/diff-test-selection)[![Maven Central](https://maven-badges.herokuapp.com/maven-central/eu.stamp-project/diff-test-selection/badge.svg)](https://mavenbadges.herokuapp.com/maven-central/eu.stamp-project/diff-test-selection)
+
 A maven plugin that gives the list of test classes, and their test methods, that execute a provided change (as an Unix diff)
 
 ## Usage
