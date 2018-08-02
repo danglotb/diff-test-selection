@@ -10,7 +10,7 @@
 
     <groupId>eu.stamp-project</groupId>
     <artifactId>diff-test-selection</artifactId>
-    <version>0.3</version>
+    <version>0.4-SNAPSHOT</version>
     <packaging>maven-plugin</packaging>
 
 
