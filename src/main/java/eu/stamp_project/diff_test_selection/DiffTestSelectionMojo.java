@@ -48,6 +48,12 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     @Parameter(property = "report", defaultValue = "CSV")
     private String report;
 
+    @Parameter(property = "module", defaultValue = "")
+    private String module;
+
+    @Parameter(property = "skipCoverage")
+    private boolean skipCoverage = false;
+
     public DiffTestSelectionMojo() {
     }
 
@@ -76,20 +82,22 @@ public class DiffTestSelectionMojo extends AbstractMojo {
 
     public void execute() throws MojoExecutionException {
         checksArguments();
-        final File baseDir = project.getBasedir();
-        getLog().info(baseDir.getAbsolutePath());
-        final Map<String, Map<String, Map<String, List<Integer>>>> coverage = getCoverage(baseDir);
+        final Map<String, Map<String, Map<String, List<Integer>>>> coverage = getCoverage();
         final Map<String, Set<String>> testThatExecuteChanges = this.getTestThatExecuteChanges(coverage);
+        getLog().info("Saving result in " + this.project.getBasedir().getAbsolutePath() + "/" + this.outputPath + " ...");
         ReportEnum.valueOf(this.report).instance.report(
                 getLog(),
-                baseDir.getAbsolutePath() + "/" + this.outputPath,
+                this.project.getBasedir().getAbsolutePath() + "/" + this.outputPath,
                 testThatExecuteChanges
         );
     }
 
-    private Map<String, Map<String, Map<String, List<Integer>>>> getCoverage(File basedir) {
-        new CloverExecutor().instrumentAndRunTest(basedir.getAbsolutePath());
-        return new CloverReader().read(basedir.getAbsolutePath());
+    private Map<String, Map<String, Map<String, List<Integer>>>> getCoverage() {
+        if (!skipCoverage) {
+            getLog().info("Computing coverage for " + this.project.getBasedir().getAbsolutePath());
+            new CloverExecutor().instrumentAndRunTest(this.project.getBasedir().getAbsolutePath());
+        }
+        return new CloverReader().read(this.project.getBasedir().getAbsolutePath());
     }
 
     private Map<String, Set<String>> getTestThatExecuteChanges(Map<String, Map<String, Map<String, List<Integer>>>> coverage) {
@@ -99,7 +107,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
             while ((currentLine = reader.readLine()) != null) {
                 if (currentLine.startsWith("+++") || currentLine.startsWith("---")) {
                     Map<String, List<Integer>> modifiedLinesPerQualifiedName =
-                            getModifiedLinesPerQualifiedName(pathToOtherVersion, currentLine, reader.readLine());
+                            getModifiedLinesPerQualifiedName(currentLine, reader.readLine());
                     if (modifiedLinesPerQualifiedName == null) {
                         continue;
                     }
@@ -120,27 +128,27 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     }
 
     @Nullable
-    private Map<String, List<Integer>> getModifiedLinesPerQualifiedName(String pathToOtherVersion,
-                                                                        String currentLine,
+    private Map<String, List<Integer>> getModifiedLinesPerQualifiedName(String currentLine,
                                                                         String secondLine) throws Exception {
         final File baseDir = project.getBasedir();
         final String file1 = getCorrectPathFile(currentLine);
         final String file2 = getCorrectPathFile(secondLine);
-        if (!file1.equals(file2)) {
+        if (!file2.endsWith(file1)) {
             getLog().warn("Could not match " + file1 + " and " + file2);
             return null;
         }
+        final File f1 = getCorrectFile(baseDir.getAbsolutePath(), file1);
+        final File f2 = getCorrectFile(this.pathToOtherVersion, file2);
         try {
-            final File f1 = getCorrectFile(baseDir.getAbsolutePath(), file1);
-            final File f2 = getCorrectFile(pathToOtherVersion, file2);
             return buildMap(new AstComparator().compare(f1, f2));
         } catch (Exception e) {
-            getLog().error("Error when trying to compare " + file1 + " and " + file2);
+            e.printStackTrace();
+            getLog().error("Error when trying to compare " + f1 + " and " + f2);
             return null;
         }
     }
 
-    private File getCorrectFile(String baseDir, String fileName){
+    private File getCorrectFile(String baseDir, String fileName) {
         final File file = new File(baseDir + "/" + fileName);
         return file.exists() ? file : new File(baseDir + "/../" + fileName);
     }
@@ -175,7 +183,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     }
 
     private Map<String, Set<String>> matchChangedWithCoverage(Map<String, Map<String, Map<String, List<Integer>>>> coverage,
-                                                               Map<String, List<Integer>> modifiedLinesPerQualifiedName) {
+                                                              Map<String, List<Integer>> modifiedLinesPerQualifiedName) {
         Map<String, Set<String>> testClassNamePerTestMethodNamesThatCoverChanges = new LinkedHashMap<>();
         for (String testClassKey : coverage.keySet()) {
             for (String testMethodKey : coverage.get(testClassKey).keySet()) {
@@ -199,9 +207,19 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     private String getCorrectPathFile(String path) {
         final String s = path.split(" ")[1];
         if (s.contains("\t")) {
-            return s.split("\t")[0].substring(1);
+            return removeDiffPrefix(s.split("\t")[0]);
         }
-        return s.substring(1); // removing the first letter, i.e. a and b
+        return removeDiffPrefix(s);
+    }
+
+    /**
+     * removing the first letter, i.e. a and b;
+     *
+     * @param s
+     * @return the string s without a or b at the begin, if there are present
+     */
+    private String removeDiffPrefix(String s) {
+        return s.startsWith("a") || s.startsWith("b") ? s.substring(1) : s;
     }
 
     /*
