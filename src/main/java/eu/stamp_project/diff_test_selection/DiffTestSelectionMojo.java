@@ -149,6 +149,9 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     }
 
     private File getCorrectFile(String baseDir, String fileName) {
+        if (fileName.substring(1).startsWith(this.module)) {
+            fileName = fileName.substring(this.module.length() + 1);
+        }
         final File file = new File(baseDir + "/" + fileName);
         return file.exists() ? file : new File(baseDir + "/../" + fileName);
     }
