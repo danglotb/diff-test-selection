@@ -105,7 +105,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         try (BufferedReader reader = new BufferedReader(new FileReader(new File(pathToDiff)))) {
             String currentLine = null;
             while ((currentLine = reader.readLine()) != null) {
-                if (currentLine.startsWith("+++") || currentLine.startsWith("---")) {
+                if ((currentLine.startsWith("+++") || currentLine.startsWith("---")) && currentLine.endsWith(".java")) {
                     Map<String, List<Integer>> modifiedLinesPerQualifiedName =
                             getModifiedLinesPerQualifiedName(currentLine, reader.readLine());
                     if (modifiedLinesPerQualifiedName == null) {
