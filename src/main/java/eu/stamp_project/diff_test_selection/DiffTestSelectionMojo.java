@@ -42,8 +42,10 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     @Parameter(property = "pathToOtherVersion", required = true)
     private String pathToOtherVersion;
 
-    @Parameter(property = "outputPath", defaultValue = "testsThatExecuteTheChange.csv")
+    @Parameter(property = "outputPath", defaultValue = "")
     private String outputPath;
+
+    private static final String DEFAULT_OUTPUT_PATH_NAME = "testsThatExecuteTheChange.csv";
 
     @Parameter(property = "report", defaultValue = "CSV")
     private String report;
@@ -84,10 +86,13 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         checksArguments();
         final Map<String, Map<String, Map<String, List<Integer>>>> coverage = getCoverage();
         final Map<String, Set<String>> testThatExecuteChanges = this.getTestThatExecuteChanges(coverage);
-        getLog().info("Saving result in " + this.project.getBasedir().getAbsolutePath() + "/" + this.outputPath + " ...");
+        if (this.outputPath.isEmpty()) {
+            this.outputPath = this.project.getBasedir().getAbsolutePath() + "/" + DEFAULT_OUTPUT_PATH_NAME;
+        }
+        getLog().info("Saving result in " + this.outputPath + " ...");
         ReportEnum.valueOf(this.report).instance.report(
                 getLog(),
-                this.project.getBasedir().getAbsolutePath() + "/" + this.outputPath,
+                this.outputPath,
                 testThatExecuteChanges
         );
     }
