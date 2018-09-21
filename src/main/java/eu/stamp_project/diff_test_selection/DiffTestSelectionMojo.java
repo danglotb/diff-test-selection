@@ -1,5 +1,6 @@
 package eu.stamp_project.diff_test_selection;
 
+import eu.stamp_project.diff_test_selection.coverage.Coverage;
 import eu.stamp_project.diff_test_selection.report.CSVReport;
 import eu.stamp_project.diff_test_selection.report.Report;
 import gumtree.spoon.AstComparator;
@@ -56,6 +57,8 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     @Parameter(property = "skipCoverage")
     private boolean skipCoverage = false;
 
+    private Coverage coverage = new Coverage();
+
     public DiffTestSelectionMojo() {
     }
 
@@ -93,7 +96,8 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         ReportEnum.valueOf(this.report).instance.report(
                 getLog(),
                 this.outputPath,
-                testThatExecuteChanges
+                testThatExecuteChanges,
+                this.coverage
         );
     }
 
@@ -116,6 +120,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
                     if (modifiedLinesPerQualifiedName == null) {
                         continue;
                     }
+                    this.coverage.addModifiedLines(modifiedLinesPerQualifiedName);
                     Map<String, Set<String>> matchedChangedWithCoverage = matchChangedWithCoverage(coverage, modifiedLinesPerQualifiedName);
                     matchedChangedWithCoverage.keySet().forEach(key -> {
                         if (!testMethodPerTestClasses.containsKey(key)) {
@@ -199,6 +204,8 @@ public class DiffTestSelectionMojo extends AbstractMojo {
                     if (modifiedLinesPerQualifiedName.containsKey(targetClassName)) {
                         for (Integer line : modifiedLinesPerQualifiedName.get(targetClassName)) {
                             if (coverage.get(testClassKey).get(testMethodKey).get(targetClassName).contains(line)) {
+                                // testClassKey#testMethodKey hits targetClassName#line
+                                this.coverage.covered(targetClassName, line);
                                 if (!testClassNamePerTestMethodNamesThatCoverChanges.containsKey(testClassKey)) {
                                     testClassNamePerTestMethodNamesThatCoverChanges.put(testClassKey, new HashSet<>());
                                 }
