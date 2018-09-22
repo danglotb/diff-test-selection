@@ -1,9 +1,6 @@
 package eu.stamp_project.diff_test_selection.coverage;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * created by Benjamin DANGLOT
@@ -14,9 +11,9 @@ import java.util.Map;
  */
 public class Coverage {
 
-    private Map<String, List<Integer>> executedLinePerQualifiedName;
+    private Map<String, Set<Integer>> executedLinePerQualifiedName;
 
-    private Map<String, List<Integer>> modifiedLinePerQualifiedName;
+    private Map<String, Set<Integer>> modifiedLinePerQualifiedName;
 
     public Coverage() {
         this.modifiedLinePerQualifiedName = new LinkedHashMap<>();
@@ -25,20 +22,23 @@ public class Coverage {
 
     public void covered(String fullQualifiedName, Integer line) {
         if (!this.executedLinePerQualifiedName.containsKey(fullQualifiedName)) {
-            this.executedLinePerQualifiedName.put(fullQualifiedName, new ArrayList<>());
+            this.executedLinePerQualifiedName.put(fullQualifiedName, new HashSet<>());
         }
         this.executedLinePerQualifiedName.get(fullQualifiedName).add(line);
     }
 
     public void addModifiedLines(Map<String, List<Integer>> modifiedLinesPerQualifiedName) {
-        this.modifiedLinePerQualifiedName.putAll(modifiedLinesPerQualifiedName);
+        modifiedLinesPerQualifiedName.keySet()
+                .forEach(
+                        key -> this.modifiedLinePerQualifiedName.put(key, new HashSet<>(modifiedLinesPerQualifiedName.get(key)))
+                );
     }
 
-    public Map<String, List<Integer>> getExecutedLinePerQualifiedName() {
+    public Map<String, Set<Integer>> getExecutedLinePerQualifiedName() {
         return executedLinePerQualifiedName;
     }
 
-    public Map<String, List<Integer>> getModifiedLinePerQualifiedName() {
+    public Map<String, Set<Integer>> getModifiedLinePerQualifiedName() {
         return modifiedLinePerQualifiedName;
     }
 }

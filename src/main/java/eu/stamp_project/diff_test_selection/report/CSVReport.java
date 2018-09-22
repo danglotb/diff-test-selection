@@ -54,8 +54,8 @@ public class CSVReport implements Report {
                                       final Coverage coverage) {
         final String output = outputPath.substring(0, outputPath.length() - ".csv".length()) + "_coverage.csv";
         log.info("Writing Coverage in " + output);
-        final Map<String, List<Integer>> executedLinePerQualifiedName = coverage.getExecutedLinePerQualifiedName();
-        final Map<String, List<Integer>> modifiedLinePerQualifiedName = coverage.getModifiedLinePerQualifiedName();
+        final Map<String, Set<Integer>> executedLinePerQualifiedName = coverage.getExecutedLinePerQualifiedName();
+        final Map<String, Set<Integer>> modifiedLinePerQualifiedName = coverage.getModifiedLinePerQualifiedName();
         final StringBuilder report = new StringBuilder();
         int executedTotal = 0;
         int modifiedTotal = 0;
