@@ -35,7 +35,8 @@ public class CloverExecutor {
                 pathToRootOfProject,
                 "clean",
                 "org.openclover:clover-maven-plugin:4.2.0:setup",
-                "test"
+                "test",
+                ""
         );
     }
 

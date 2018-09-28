@@ -8,28 +8,20 @@ import gumtree.spoon.diff.Diff;
 import gumtree.spoon.diff.operations.Operation;
 import org.apache.maven.monitor.logging.DefaultLog;
 import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.logging.console.ConsoleLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import spoon.reflect.cu.CompilationUnit;
-import spoon.reflect.cu.SourcePosition;
+import spoon.reflect.code.CtBlock;
+import spoon.reflect.code.CtStatement;
 import spoon.reflect.declaration.CtElement;
-import spoon.reflect.declaration.CtType;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Mojo(name = "list")
 public class DiffTestSelectionMojo extends AbstractMojo {
@@ -57,7 +49,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     @Parameter(property = "skipCoverage")
     private boolean skipCoverage = false;
 
-    private Coverage coverage = new Coverage();
+    private Coverage coverage = new Coverage(getLog());
 
     public DiffTestSelectionMojo() {
     }
@@ -85,7 +77,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         return file.getAbsolutePath();
     }
 
-    public void execute() throws MojoExecutionException {
+    public void execute() {
         checksArguments();
         final Map<String, Map<String, Map<String, List<Integer>>>> coverage = getCoverage();
         final Map<String, Set<String>> testThatExecuteChanges = this.getTestThatExecuteChanges(coverage);
@@ -150,6 +142,8 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         final File f1 = getCorrectFile(baseDir.getAbsolutePath(), file1);
         final File f2 = getCorrectFile(this.pathToOtherVersion, file2);
         try {
+            getLog().info(f1.getAbsolutePath());
+            getLog().info(f2.getAbsolutePath());
             return buildMap(new AstComparator().compare(f1, f2));
         } catch (Exception e) {
             e.printStackTrace();
@@ -169,28 +163,20 @@ public class DiffTestSelectionMojo extends AbstractMojo {
     @NotNull
     private Map<String, List<Integer>> buildMap(Diff compare) {
         Map<String, List<Integer>> modifiedLinesPerQualifiedName = new LinkedHashMap<>();// keeps the order
-        for (Operation operation : compare.getAllOperations()) {
-            final CtElement srcNode = operation.getSrcNode();
-            if (srcNode == null) {
-                continue;
+        final List<Operation> allOperations = compare.getAllOperations();
+        for (Operation operation : allOperations) {
+            if (filterOperation(operation)) {
+                final int line = operation.getSrcNode().getPosition().getLine();
+                final String qualifiedName = operation.getSrcNode()
+                        .getPosition()
+                        .getCompilationUnit()
+                        .getMainType()
+                        .getQualifiedName();
+                if (!modifiedLinesPerQualifiedName.containsKey(qualifiedName)) {
+                    modifiedLinesPerQualifiedName.put(qualifiedName, new ArrayList<>());
+                }
+                modifiedLinesPerQualifiedName.get(qualifiedName).add(line);
             }
-            final SourcePosition position = srcNode.getPosition();
-            if (position == null) {
-                continue;
-            }
-            final CompilationUnit compilationUnit = position.getCompilationUnit();
-            if (compilationUnit == null) {
-                continue;
-            }
-            final CtType<?> mainType = compilationUnit.getMainType();
-            if (mainType == null) {
-                continue;
-            }
-            final String qualifiedName = mainType.getQualifiedName();
-            if (!modifiedLinesPerQualifiedName.containsKey(qualifiedName)) {
-                modifiedLinesPerQualifiedName.put(qualifiedName, new ArrayList<>());
-            }
-            modifiedLinesPerQualifiedName.get(qualifiedName).add(position.getLine());
         }
         return modifiedLinesPerQualifiedName;
     }
@@ -217,6 +203,23 @@ public class DiffTestSelectionMojo extends AbstractMojo {
             }
         }
         return testClassNamePerTestMethodNamesThatCoverChanges;
+    }
+
+    private boolean filterOperation(Operation operation) {
+        if (operation.getSrcNode() != null) {
+            return filterOperationFromNode(operation.getSrcNode());
+        } else if (operation.getDstNode() != null) {
+            return filterOperationFromNode(operation.getDstNode());
+        }
+        return false;
+    }
+
+    private boolean filterOperationFromNode(CtElement element) {
+        return element instanceof CtStatement &&
+                !(element instanceof CtBlock<?>) &&
+                element.getPosition() != null &&
+                element.getPosition().getCompilationUnit() != null &&
+                element.getPosition().getCompilationUnit().getMainType() != null;
     }
 
     private String getCorrectPathFile(String path) {
@@ -272,11 +275,7 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         diffTestSelectionMojo.setLog(new DefaultLog(new ConsoleLogger(0, "logger")));
         diffTestSelectionMojo.setReport("CSV");
         diffTestSelectionMojo.setOutputPath("testsThatExecuteTheChange.csv");
-        try {
-            diffTestSelectionMojo.execute();
-        } catch (MojoExecutionException e) {
-            e.printStackTrace();
-        }
+        diffTestSelectionMojo.execute();
     }
 
 }

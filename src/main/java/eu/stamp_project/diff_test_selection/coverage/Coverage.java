@@ -1,5 +1,7 @@
 package eu.stamp_project.diff_test_selection.coverage;
 
+import org.apache.maven.plugin.logging.Log;
+
 import java.util.*;
 
 /**
@@ -15,22 +17,37 @@ public class Coverage {
 
     private Map<String, Set<Integer>> modifiedLinePerQualifiedName;
 
-    public Coverage() {
+    private final Log log;
+
+    public Coverage(Log log) {
         this.modifiedLinePerQualifiedName = new LinkedHashMap<>();
         this.executedLinePerQualifiedName = new LinkedHashMap<>();
+        this.log = log;
     }
 
     public void covered(String fullQualifiedName, Integer line) {
         if (!this.executedLinePerQualifiedName.containsKey(fullQualifiedName)) {
             this.executedLinePerQualifiedName.put(fullQualifiedName, new HashSet<>());
         }
-        this.executedLinePerQualifiedName.get(fullQualifiedName).add(line);
+        if (this.executedLinePerQualifiedName.get(fullQualifiedName).add(line)) {
+            this.log.info(fullQualifiedName + ":" + line + " covered.");
+        }
     }
 
-    public void addModifiedLines(Map<String, List<Integer>> modifiedLinesPerQualifiedName) {
-        modifiedLinesPerQualifiedName.keySet()
-                .forEach(
-                        key -> this.modifiedLinePerQualifiedName.put(key, new HashSet<>(modifiedLinesPerQualifiedName.get(key)))
+    public void addModifiedLines(final Map<String, List<Integer>> newModifiedLinesPerQualifiedName) {
+        newModifiedLinesPerQualifiedName.keySet()
+                .forEach(key -> {
+                            if (!this.modifiedLinePerQualifiedName.containsKey(key)) {
+                                this.modifiedLinePerQualifiedName.put(key, new HashSet<>());
+                            }
+                            newModifiedLinesPerQualifiedName.get(key)
+                                    .forEach(line -> {
+                                                if (this.modifiedLinePerQualifiedName.get(key).add(line)) {
+                                                    log.info(key + ":" + line + " is modified.");
+                                                }
+                                            }
+                                    );
+                        }
                 );
     }
 
