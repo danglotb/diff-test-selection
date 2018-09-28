@@ -165,9 +165,10 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         Map<String, List<Integer>> modifiedLinesPerQualifiedName = new LinkedHashMap<>();// keeps the order
         final List<Operation> allOperations = compare.getAllOperations();
         for (Operation operation : allOperations) {
-            if (filterOperation(operation)) {
-                final int line = operation.getSrcNode().getPosition().getLine();
-                final String qualifiedName = operation.getSrcNode()
+            CtElement node = filterOperation(operation);
+            if (node != null) {
+                final int line = node.getPosition().getLine();
+                final String qualifiedName = node
                         .getPosition()
                         .getCompilationUnit()
                         .getMainType()
@@ -205,13 +206,13 @@ public class DiffTestSelectionMojo extends AbstractMojo {
         return testClassNamePerTestMethodNamesThatCoverChanges;
     }
 
-    private boolean filterOperation(Operation operation) {
-        if (operation.getSrcNode() != null) {
-            return filterOperationFromNode(operation.getSrcNode());
-        } else if (operation.getDstNode() != null) {
-            return filterOperationFromNode(operation.getDstNode());
+    private CtElement filterOperation(Operation operation) {
+        if (operation.getSrcNode() != null && filterOperationFromNode(operation.getSrcNode())) {
+            return operation.getSrcNode();
+        } else if (operation.getDstNode() != null && filterOperationFromNode(operation.getDstNode())) {
+            return operation.getDstNode();
         }
-        return false;
+        return null;
     }
 
     private boolean filterOperationFromNode(CtElement element) {
