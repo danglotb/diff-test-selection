@@ -14,9 +14,8 @@ install:
 script:
   - ./.travis/build.sh
 
-#TODO
-#after_success:
-#  - cd .. && ./.ci/travis-deploy.sh
+after_success:
+  - cd .. && ./.ci/travis-deploy.sh
 
 branch:
   only:
