@@ -15,7 +15,7 @@ script:
   - ./.travis/build.sh
 
 after_success:
-  - cd .. && ./.ci/travis-deploy.sh
+  - cd .. && ./.travis/travis-deploy.sh
 
 branch:
   only:
